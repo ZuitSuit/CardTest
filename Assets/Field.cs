@@ -9,7 +9,6 @@ public class Field : MonoBehaviour, IDropHandler
     {
         if (eventData.pointerDrag != null)
         {
-
             if (eventData.pointerDrag.TryGetComponent(out CardContainer card))
             {
                 Destroy(card.gameObject);
