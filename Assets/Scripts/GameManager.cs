@@ -168,6 +168,11 @@ public class GameManager : MonoBehaviour
     {
         cardContainers.Remove(container);
     }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
 }
 
 //obviously add more states if it's a real game, duh
