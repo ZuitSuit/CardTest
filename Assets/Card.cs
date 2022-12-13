@@ -15,8 +15,9 @@ public class Card
     public int HP
     {
         get { return hp; }
-        set { 
-            hp = value;
+        set {
+            //int previousHP = hp;
+            hp = Mathf.Clamp(value, 0, maxHP);
             HpChangedAction?.Invoke();
         }
     }
@@ -27,16 +28,17 @@ public class Card
     {
         get { return damage; }
         set {
-            DamageChangedAction?.Invoke();
+            
             damage = value;
+            DamageChangedAction?.Invoke();
         }
     }
     public int Energy
     {
         get { return energy; }
         set {
-            EnergyChangedAction?.Invoke();
             energy = value;
+            EnergyChangedAction?.Invoke();
         }
     }
 

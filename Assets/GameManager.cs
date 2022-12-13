@@ -35,6 +35,7 @@ public class GameManager : MonoBehaviour
     GameState currentState;
     public GameState CurrentState => currentState;
 
+    List<CardContainer> cardContainers = new List<CardContainer>();
 
     private void Awake()
     {
@@ -44,6 +45,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         currentState = GameState.Busy;
+        loadingCanvas.gameObject.SetActive(true);
         GameStartSetup();
     }
 
@@ -112,6 +114,7 @@ public class GameManager : MonoBehaviour
         foreach (Sprite sprite in cardSprites)
         {
             CardContainer container = Instantiate(cardPrefab, cardParent);
+            cardContainers.Add(container);
             Card card = new Card(Random.Range(1, 10), Random.Range(1, 10), Random.Range(1, 10));
             container.SetupCard(card, sprite);
             container.transform.localScale = scaleFrom;
@@ -125,9 +128,46 @@ public class GameManager : MonoBehaviour
         currentState = GameState.PlayerTurn;
     }
 
-    //method for random damage
+    public Vector3 MiddleOfTheScreen()
+    {
+        Vector3 center = new Vector3(Screen.width / 2, Screen.height / 2, 0);
+        return center;
+    }
 
+    //"GAMEPLAY"
+    public void DamageAll(bool damageOnly = false)
+    {
+        if (currentState == GameState.Busy) return;
+        currentState = GameState.Busy;
+        StartCoroutine(EnemyTurn(damageOnly));
+    }
 
+    public IEnumerator EnemyTurn(bool damageOnly)
+    {
+        for (int i = cardContainers.Count - 1; i >= 0; i--)
+        {
+            //TODO possinly skip method entirely if value is 0
+
+            if (damageOnly)
+            {
+                cardContainers[i].ChangeValue(ValueType.Health, Random.Range(-1, -2));
+            }
+            else
+            {
+                cardContainers[i].ChangeValue((ValueType)Random.Range(0, 3), Random.Range(-2, 9));
+            }
+
+            
+            yield return new WaitUntil(() => !cardContainers[i].Used);
+        }
+
+        currentState = GameState.PlayerTurn;
+    }
+
+    public void RemoveCard(CardContainer container)
+    {
+        cardContainers.Remove(container);
+    }
 }
 
 //obviously add more states if it's a real game, duh

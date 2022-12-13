@@ -9,11 +9,14 @@ public class CardContainer : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 {
     [SerializeField] TextMeshProUGUI healthText, damageText, energyText;
     [SerializeField] Image healthFill, cardImage;
-    [SerializeField] CanvasGroup canvasGroup;
+    [SerializeField] CanvasGroup cardCanvasGroup, shineCanvasGroup;
+
 
 
     Card card;
+    public Card data => card;
     bool used; //used when card is used
+    public bool Used => used;
 
     //drag reference to return the card to
     RectTransform parentRect;
@@ -33,24 +36,47 @@ public class CardContainer : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
         card.EnergyChangedAction += UpdateEnergy;
     }
 
+    public void ChangeValue(ValueType value, int changeBy)
+    {
+        used = true;
 
+        switch (value)
+        {
+            case ValueType.Damage:
+                card.Damage += changeBy;
+                break;
+            case ValueType.Energy:
+                card.Energy += changeBy;
+                break;
+            case ValueType.Health:
+            default:
+                card.HP += changeBy;
+                break;
+        }
+
+        Unparent();
+    }
 
 
     public void OnBeginDrag(PointerEventData pointerEventData)
     {
         if (pointerEventData.button != PointerEventData.InputButton.Left || GameManager.Instance.CurrentState == GameState.Busy) return;
 
-        canvasGroup.blocksRaycasts = false;
-        parentRect = transform.parent.GetComponent<RectTransform>();
-        siblingIndex = transform.GetSiblingIndex();
+        cardCanvasGroup.blocksRaycasts = false;
 
-
-        transform.SetParent(GameManager.Instance.CardCanvas);
-
+        Unparent();
 
         transform.rotation = Quaternion.identity;
 
-        canvasGroup.alpha = 0.8f;
+        cardCanvasGroup.alpha = 0.8f;
+
+        LeanTween.cancel(shineCanvasGroup.gameObject);
+        LeanTween.value(shineCanvasGroup.gameObject, shineCanvasGroup.alpha, 1f, .2f)
+    .setOnUpdate((float transparency) =>
+    {
+        shineCanvasGroup.alpha = transparency;
+
+    });
 
         //TODO make transparent when dragging, circles around the slots (sphere collider)
 
@@ -61,15 +87,22 @@ public class CardContainer : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
     {
         if (used) return;
 
-        canvasGroup.blocksRaycasts = true;
+        cardCanvasGroup.blocksRaycasts = true;
         if (pointerEventData.button != PointerEventData.InputButton.Left) return;
 
-        transform.SetParent(parentRect);
-        transform.SetSiblingIndex(siblingIndex);
+        ParentBack();
         //transform.localPosition = Vector3.zero;
 
-        canvasGroup.alpha = 1f;
+        cardCanvasGroup.alpha = 1f;
         //deactivate drag component
+
+        LeanTween.cancel(shineCanvasGroup.gameObject);
+        LeanTween.value(shineCanvasGroup.gameObject, shineCanvasGroup.alpha, 0f, .2f)
+    .setOnUpdate((float transparency) =>
+    {
+        shineCanvasGroup.alpha = transparency;
+
+    });
     }
 
 
@@ -80,6 +113,23 @@ public class CardContainer : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
         transform.position = Input.mousePosition;
     }
 
+
+    public void Unparent()
+    {
+        parentRect = transform.parent.GetComponent<RectTransform>();
+        siblingIndex = transform.GetSiblingIndex();
+
+
+        transform.SetParent(GameManager.Instance.CardCanvas);
+    }
+
+    public void ParentBack()
+    {
+        transform.SetParent(parentRect);
+        transform.SetSiblingIndex(siblingIndex);
+        used = false;
+    }
+
     public void DisableCard()
     {
         used = true;
@@ -88,30 +138,53 @@ public class CardContainer : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 
     //UI stuff
 
+    //basically the same method - ideally redo this
     public void UpdateDamage()
     {
-        LeanTween.value(damageText.gameObject, int.Parse(damageText.text), card.Damage, 1f)
+        LeanTween.rotate(gameObject, Vector3.zero, .2f);
+        LTSeq sequence = LeanTween.sequence();
+        sequence.append(LeanTween.move(gameObject, GameManager.Instance.MiddleOfTheScreen(), .3f));
+        sequence.append(LeanTween.scale(damageText.gameObject, Vector3.one * 3f, .4f).setLoopPingPong(1));
+        sequence.append(LeanTween.value(damageText.gameObject, int.Parse(damageText.text), card.Damage, 1f)
     .setOnUpdate((float newNumber) =>
     {
-        damageText.text = Mathf.CeilToInt(newNumber).ToString();
+        damageText.text = Mathf.RoundToInt(newNumber).ToString();
 
-    });
+    }));
+        sequence.append(ParentBack);
+
     }
     public void UpdateEnergy()
     {
-        LeanTween.value(damageText.gameObject, int.Parse(energyText.text), card.Energy, 1f)
+        LeanTween.rotate(gameObject, Vector3.zero, .2f);
+        LTSeq sequence = LeanTween.sequence();
+        sequence.append(LeanTween.move(gameObject, GameManager.Instance.MiddleOfTheScreen(), .3f));
+        sequence.append(LeanTween.scale(energyText.gameObject, Vector3.one * 3f, .4f).setLoopPingPong(1));
+        sequence.append(LeanTween.value(energyText.gameObject, int.Parse(energyText.text), card.Energy, 1f)
     .setOnUpdate((float newNumber) =>
     {
-        energyText.text = Mathf.CeilToInt(newNumber).ToString();
+        energyText.text = Mathf.RoundToInt(newNumber).ToString();
 
-    });
+    }));
+        sequence.append(ParentBack);
+
     }
+
     public void UpdateHP()
     {
         healthText.text = $"{card.HP}/{card.MaxHP}";
-        LeanTween.cancel(healthFill.gameObject);    
-        
+        LeanTween.cancel(healthFill.gameObject);
+
+        LeanTween.rotate(gameObject, Vector3.zero, .2f);
+
         LTSeq sequence = LeanTween.sequence();
+
+        sequence.append(LeanTween.move(gameObject, GameManager.Instance.MiddleOfTheScreen(), .3f));
+
+        if (card.HP >= card.MaxHP)
+        {
+            sequence.append(LeanTween.scale(healthText.gameObject, Vector3.one * 2f, .4f).setLoopPingPong(1));
+        }
 
         sequence.append(
         LeanTween.value(healthFill.gameObject, healthFill.fillAmount, card.HP / (float)card.MaxHP, 1f)
@@ -121,20 +194,43 @@ public class CardContainer : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 
             }));
 
+
+
         if(card.HP <= 0)
         {
+            //if hp is < 0 add die to sequence
             sequence.append(LeanTween.scale(gameObject, Vector3.zero, .3f).setEaseInElastic());
+            sequence.append(SetUnused);
+            sequence.append(.1f);
             sequence.append(Die);
         }
+        else
+        {
+            sequence.append(ParentBack);
+        }
 
-        //if hp is < 0 add die to sequence
     }
-
-
+    public void SetUnused()
+    {
+        ToggleUsed(false);
+    }
+    public void ToggleUsed(bool toggle = false)
+    {
+        used = toggle;
+    }
 
     public void Die()
     {
+        
+        GameManager.Instance.RemoveCard(this);
         Destroy(gameObject);
     }
     
+}
+
+public enum ValueType
+{
+    Health,
+    Damage,
+    Energy
 }
