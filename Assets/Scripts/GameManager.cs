@@ -63,7 +63,6 @@ public class GameManager : MonoBehaviour
 
     public void SpawnCards()
     {
-        //TODO turn into coroutine
         loadingCanvas.gameObject.SetActive(false);
         StartCoroutine(SpawnCardsOverTime());
     }

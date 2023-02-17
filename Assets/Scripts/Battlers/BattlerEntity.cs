@@ -22,7 +22,15 @@ public class BattlerEntity : MonoBehaviour
         //hook up events to stats
     }
 
-
+    public bool TryUseMana(float amount)
+    {
+        if(stats.mana.CurrentValue >= amount)
+        {
+            stats.mana.CurrentValue -= amount;
+            return true;
+        }
+        return false;
+    }
 
     public void TakeDamage(float amount)
     {

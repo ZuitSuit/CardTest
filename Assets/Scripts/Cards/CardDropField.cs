@@ -2,20 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using TMPro;
+using UnityEngine.UI;
 
-public class Field : MonoBehaviour, IDropHandler
+public class CardDropField : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    [SerializeField] TextMeshProUGUI damageDealt;
+
     CardContainer currentCard;
+    public RectTransform rectTransform;
+    [SerializeField] Color highlightedColor;
+    [SerializeField] Image background;
 
     public void OnDrop(PointerEventData eventData)
     {
         if (eventData.pointerDrag != null)
         {
-            if (eventData.pointerDrag.TryGetComponent(out CardContainer card))
+            //&& player.TryUseMana(card.data.Energy)
+            if (eventData.pointerDrag.TryGetComponent(out CardContainer card) )
             {
-                damageDealt.text = $"dealt { card.data.Damage} damage";
+
 
                 card.ToggleUsed(true); //prevent dragging and stuf
                 currentCard = card;
@@ -29,9 +33,27 @@ public class Field : MonoBehaviour, IDropHandler
         }
     }
 
+
+
     public void UseUpCard()
     {
         currentCard.Die();
         currentCard = null;
+    }
+
+    public void ToggleHighlight(bool toggle)
+    {
+        background.color = toggle ? highlightedColor : Color.clear;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ToggleHighlight(true);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+
+        ToggleHighlight(false);
     }
 }
